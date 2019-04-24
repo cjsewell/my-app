@@ -1,2 +1,0 @@
-# react-lms
-# my-app
