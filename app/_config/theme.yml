@@ -3,7 +3,7 @@ Name: mytheme
 ---
 SilverStripe\View\SSViewer:
   themes:
-    - 'omx'
+    - 'lms'
     - '$public'
     - '$default'
 SilverStripe\i18n\i18n:
