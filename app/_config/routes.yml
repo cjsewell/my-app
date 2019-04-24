@@ -1,0 +1,7 @@
+---
+Name: lmsroutes
+After: '#coreroutes'
+---
+SilverStripe\Control\Director:
+  rules:
+    'api/businessrole': 'GDM\LMS\Controllers\BusinessRoleController'

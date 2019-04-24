@@ -1,0 +1,35 @@
+{
+    "name": "react/lms",
+    "description": "This is a lms built with react front-end and silverstripe back-end",
+    "authors": [
+        {
+            "name": "Kartik Patel",
+            "email": "kartik@gurudigital.nz",
+            "role": "SilverStripe Developer"
+        }
+    ],
+    "require": {
+        "php": ">=7.0.0",
+        "silverstripe/recipe-core": "^4.3",
+        "silverstripe/admin": "^1.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^5.7"
+    },
+    "prefer-stable": true,
+    "minimum-stability": "dev",
+    "extra": {
+        "project-files-installed": [
+            "app/.htaccess",
+            "app/_config.php",
+            "app/_config/mysite.yml"
+        ],
+        "public-files-installed": [
+            ".htaccess",
+            "index.php",
+            "install-frameworkmissing.html",
+            "install.php",
+            "web.config"
+        ]
+    }
+}

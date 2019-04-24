@@ -1,0 +1,8 @@
+/silverstripe-cache/
+/.env
+/vendor/
+/resources/
+/public/resources/
+/.ss.error.log
+/.idea
+node_modules/
