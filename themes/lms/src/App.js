@@ -1,25 +1,25 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
+import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom';
+import '../node_modules/bootstrap/dist/css/bootstrap.css';
+import BusinessRole from './Components/BusinesssRole.js';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <div>
+        
+        <nav className="navbar navbar-expand-lg navbar-light bg-light mb-3">
+          <ul className="navbar-nav mr-auto">
+            <li><Link to={'/business'} className="nav-link"> Business Roles </Link></li>
+          </ul>
+        </nav>
+
+        <Switch>
+          <Route exact path='/business' component={BusinessRole} />
+        </Switch>
+      </div>
+    </Router>
   );
 }
 
