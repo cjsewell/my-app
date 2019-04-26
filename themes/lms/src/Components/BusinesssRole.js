@@ -223,7 +223,7 @@ class BusinessRole extends Component {
                                             type="text"
                                             onChange={handleChange}
                                             onBlur={handleBlur}
-                                            value={values.Name}
+                                            value={values.name}
                                         />
                                         {console.log(rowData.Name)}
 
