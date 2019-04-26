@@ -17,7 +17,8 @@ class BusinessRole extends Component {
             deleteModel: false,
             isLoaded: false,
             idToModify: undefined,
-            rowData: []
+            rowData: [],
+            editModal: false
         };
     }
 
@@ -42,18 +43,28 @@ class BusinessRole extends Component {
             }
         );
 
+    resetButtonStates = () => {
+        this.setState({
+            show: false,
+            deleteModel: false,
+            editModal: false
+        })
+    }
+
     render() {
+        const { data, show, deleteModel, idToModify, error, rowData, editModal } = this.state;
+
         const RoleValidation = Yup.object().shape({
             name: Yup.string().required()
         })
 
-        const { data, show, deleteModel, idToModify, error, rowData } = this.state;
         const columns = [{
             Header: 'Name',
             accessor: 'Name'
         }, {
             Header: <div className="text-right">
                 <button className="btn btn-success btn-sm mr-1" onClick={() => {
+                    this.resetButtonStates();
                     this.setState({
                         show: true
                     })
@@ -64,9 +75,20 @@ class BusinessRole extends Component {
             </div>,
             Cell: row => (
                 <div className="text-right">
-                    <button className="btn btn-success btn-sm mr-1" type="submit">Edit</button>
+                    <button className="btn btn-success btn-sm mr-1" type="submit"
+                        onClick={() => {
+                            this.resetButtonStates();
+                            this.setState({
+                                idToModify: row.original.ID,
+                                editModal: true,
+                                rowData: row.original
+                            })
+                        }}
+                    >Edit
+                    </button>
                     <button className="btn btn-danger btn-sm ml-1"
                         type="submit" onClick={() => {
+                            this.resetButtonStates();
                             this.setState({
                                 deleteModel: true,
                                 idToModify: row.original.ID,
@@ -78,6 +100,9 @@ class BusinessRole extends Component {
             ),
             filterable: false
         }];
+
+
+
 
         if (error) {
             return (
@@ -110,17 +135,23 @@ class BusinessRole extends Component {
                                     'Content-Type': 'application/json'
                                 },
                                 body: JSON.stringify(values, null, 2)
-                            }).finally(() => {
-                                setSubmitting(false);
-                                this.setState({ show: false });
-                                this.refreshGrid();
-                                ToastsStore.success("You have just added a new business role")
-                            });
+                            }).then((response) => response.json())
+                                .then((data) => {
+                                    if (data.success) {
+                                        this.setState({ show: false });
+                                        ToastsStore.success("You have just added a new business role")
+                                        this.refreshGrid();
+                                    }
+                                }).finally(() => {
+                                    setSubmitting(false);
+                                });
                         }}
                         validationSchema={RoleValidation}
                     >
                         {({ handleSubmit, errors, handleBlur, handleChange }) => (
-                            <Modal show={show} onHide={() => { this.setState({ show: false }) }}>
+                            <Modal show={show} onHide={() => {
+                                this.setState({ show: false })
+                            }}>
                                 <Modal.Header closeButton>
                                     <Modal.Title>Modal Heading</Modal.Title>
                                 </Modal.Header>
@@ -144,9 +175,70 @@ class BusinessRole extends Component {
                                                 show: false,
                                             })
                                         }}> Close
-                                    </Button>
+                                        </Button>
                                         <Button variant="primary" type="submit"> Save Changes
-                                    </Button>
+                                        </Button>
+                                    </Modal.Footer>
+                                </Form>
+                            </Modal>
+                        )}
+                    </Formik>
+
+
+
+
+                    <Formik
+                        initialValues={{ name: `${rowData.Name}` }}
+                        onSubmit={(values, { setSubmitting }) => {
+                            fetch(`api/businessrole/edit/${idToModify}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(values, null, 2)
+                            }).finally(() => {
+                                this.setState({ editModal: false });
+                                ToastsStore.success("You have just edited the business role")
+                                this.refreshGrid();
+                                setSubmitting(false);
+                            });
+                        }}
+                    >
+                        {({ handleSubmit, errors, handleBlur, handleChange, values }) => (
+                            <Modal show={editModal} onHide={() => {
+                                this.setState({ editModal: false })
+                            }}>
+                                <Modal.Header closeButton>
+                                    <Modal.Title>Modal Heading</Modal.Title>
+                                </Modal.Header>
+
+                                <Form onSubmit={handleSubmit}>
+                                    <Modal.Body>
+                                        {console.log(values)}
+                                        <label>Business Role</label>
+                                        <input
+                                            className="form-control"
+                                            name="name"
+                                            type="text"
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            value={values.Name}
+                                        />
+                                        {console.log(rowData.Name)}
+
+                                        {errors.name ? (<div className="form-errors">{errors.name}</div>) : null}
+                                    </Modal.Body>
+
+                                    <Modal.Footer>
+                                        <Button variant="secondary" onClick={() => {
+                                            this.setState({
+                                                editModal: false,
+                                            })
+                                        }}> Close
+                                        </Button>
+                                        <Button variant="primary" type="submit"> Save Changes
+                                        </Button>
                                     </Modal.Footer>
                                 </Form>
                             </Modal>
@@ -161,7 +253,7 @@ class BusinessRole extends Component {
                         route="api/businessrole"
                         action="delete"
                     />
-                </div >
+                </div>
             )
         }
     };
