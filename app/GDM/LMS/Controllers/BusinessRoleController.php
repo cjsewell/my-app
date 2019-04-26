@@ -8,9 +8,12 @@
 
 namespace GDM\LMS\Controllers {
 
+    use Exception;
     use GDM\LMS\Models\BusinessRole;
     use SilverStripe\Control\Controller;
     use SilverStripe\Control\HTTPRequest;
+    use SilverStripe\Control\HTTPResponse;
+    use SilverStripe\ORM\ValidationException;
 
 
     /**
@@ -20,114 +23,97 @@ namespace GDM\LMS\Controllers {
     class BusinessRoleController extends Controller
     {
         private static $allowed_actions = [
-            'Add',
+            'Save',
             'GetAll',
             'Delete',
-            'Update'
         ];
 
         private static $url_handlers = [
-            'add' => 'Add',
-            'get' => 'GetAll',
-            'delete/$ID' => 'Delete',
-            'edit/$ID' => 'Update'
+            'save'       => 'Save',
+            'get'        => 'GetAll',
+            'delete/$ID' => 'Delete'
         ];
 
 
         /**
          * @param HTTPRequest $request
-         * @return \SilverStripe\Control\HTTPResponse
-         * @throws \SilverStripe\ORM\ValidationException
+         * @return HTTPResponse
+         * @throws ValidationException
          */
-        public function Add(HTTPRequest $request)
+        public function Save(HTTPRequest $request)
         {
             $response = [
-                "success" => false,
-                "message" => "An error occurred"
+                'success' => false,
+                'message' => 'An error occurred'
             ];
             if ($request) {
-                $object = json_decode($request->getBody());
-                $model = BusinessRole::create();
-                $model->Name = $object->name;
-                $model->write();
-                $response = [
-                    "success" => true,
-                    "message" => "Added ok"
-                ];
+                $object   = json_decode($request->getBody());
+                $isUpdate = isset($object->ID) && $object->ID;
+                $model    = $isUpdate ? BusinessRole::get()->byID($object->ID) : BusinessRole::create();
+                $model->update((array)$object);
+                try {
+                    $model->write();
+                    $response = [
+                        'success' => true,
+                        'message' => ($isUpdate ? 'Updated' : 'Added') . ' ok'
+                    ];
+                } catch (Exception $e) {
+                    $response = [
+                        'success' => false,
+                        'message' => $e->getMessage()
+                    ];
+                }
             }
             return $this->getResponse()
-                ->addHeader('Content-Type', 'ç')
-                ->setBody(json_encode($response));
+                        ->addHeader('Content-Type', 'ç')
+                        ->setBody(json_encode($response));
         }
 
-
         /**
-         * @param HTTPRequest $request
-         * @return \SilverStripe\Control\HTTPResponse
-         * @throws \SilverStripe\ORM\ValidationException
-         */
-        public function Update(HTTPRequest $request)
-        {
-            $response = [
-                "success" => false,
-                "message" => "An error occurred"
-            ];
-
-            if($request) {
-                $id = $request->param('ID');
-                $object = json_decode($request->getBody());
-                $model = $id ? BusinessRole::get()->byID($id) : BusinessRole::create();
-                $model->Name = $object->name;
-                $model->write();
-                $response = [
-                    "success" => true,
-                    "message" => "Updated ok"
-                ];
-            }
-
-            return $this->getResponse()
-                ->addHeader('Content-Type', 'application/json')
-                ->setBody(json_encode($response));
-        }
-
-
-        /**
-         * @return \SilverStripe\Control\HTTPResponse|string
+         * @return HTTPResponse|string
          *
          * Gets all business roles in the database
          */
         public function GetAll()
         {
             return $this->getResponse()
-                ->addHeader('Content-Type', 'application/json')
-                ->setBody(json_encode(BusinessRole::get()->toNestedArray()));
+                        ->addHeader('Content-Type', 'application/json')
+                        ->setBody(json_encode(BusinessRole::get()->toNestedArray()));
         }
 
 
         /**
          * @param HTTPRequest $request
-         * @return \SilverStripe\Control\HTTPResponse
+         * @return HTTPResponse
          */
         public function Delete(HTTPRequest $request)
         {
             $response = [
-                "sucesses" => false,
-                "message" => "An error occured"
+                'success' => false,
+                'message' => 'An error occurred'
             ];
 
-            $id = $request->param('ID');
+            $id   = $request->param('ID');
             $role = BusinessRole::get()->byID($id);
             if ($role && $role->ID > 0) {
-                $role->delete();
-                $response = [
-                    'success' => true,
-                    'message' => 'successfully deleted'
-                ];
+                try {
+
+                    $role->delete();
+                    $response = [
+                        'success' => true,
+                        'message' => 'successfully deleted'
+                    ];
+                } catch (Exception $e) {
+                    $response = [
+                        'success' => false,
+                        'message' => $e->getMessage()
+                    ];
+                }
             }
 
             return $this->getResponse()
-                ->addHeader('Content-Type', 'application/json')
-                ->setBody(json_encode($response));
+                        ->addHeader('Content-Type', 'application/json')
+                        ->setBody(json_encode($response));
         }
     }
 }

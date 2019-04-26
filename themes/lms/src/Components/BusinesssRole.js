@@ -1,24 +1,22 @@
-import React, { Component } from 'react';
+import React, {Component} from 'react';
 import ReactTable from 'react-table';
 import 'react-table/react-table.css';
-import { Modal, Button, Form, Alert } from 'react-bootstrap';
-import { Formik } from 'formik';
-import { ToastsContainer, ToastsStore, ToastsContainerPosition } from 'react-toasts';
+import {Modal, Button, Form, Alert} from 'react-bootstrap';
+import {Formik} from 'formik';
+import {ToastsContainer, ToastsStore, ToastsContainerPosition} from 'react-toasts';
 import * as Yup from 'yup';
 import ConfirmationModal from '../Modal/ConfirmationModal.js';
 
 class BusinessRole extends Component {
-    constructor() {
-        super();
+    constructor(props) {
+        super(props);
         this.state = {
-            show: false,
             data: [],
             error: null,
-            deleteModel: false,
+            showDelete: false,
             isLoaded: false,
-            idToModify: undefined,
-            rowData: [],
-            editModal: false
+            rowData: {},
+            showForm: false
         };
     }
 
@@ -45,18 +43,19 @@ class BusinessRole extends Component {
 
     resetButtonStates = () => {
         this.setState({
-            show: false,
-            deleteModel: false,
+            showForm: false,
+            showDelete: false,
             editModal: false
         })
-    }
+    };
+
 
     render() {
-        const { data, show, deleteModel, idToModify, error, rowData, editModal } = this.state;
+        const {data, showDelete, error, rowData, showForm} = this.state;
 
         const RoleValidation = Yup.object().shape({
-            name: Yup.string().required()
-        })
+            Name: Yup.string().required()
+        });
 
         const columns = [{
             Header: 'Name',
@@ -66,7 +65,7 @@ class BusinessRole extends Component {
                 <button className="btn btn-success btn-sm mr-1" onClick={() => {
                     this.resetButtonStates();
                     this.setState({
-                        show: true
+                        showForm: true
                     })
                 }
                 }>
@@ -76,25 +75,24 @@ class BusinessRole extends Component {
             Cell: row => (
                 <div className="text-right">
                     <button className="btn btn-success btn-sm mr-1" type="submit"
-                        onClick={() => {
-                            this.resetButtonStates();
-                            this.setState({
-                                idToModify: row.original.ID,
-                                editModal: true,
-                                rowData: row.original
-                            })
-                        }}
+                            onClick={() => {
+                                this.resetButtonStates();
+                                this.setState({
+                                    showForm: true,
+                                    rowData: row.original
+                                })
+                            }}
                     >Edit
                     </button>
                     <button className="btn btn-danger btn-sm ml-1"
-                        type="submit" onClick={() => {
-                            this.resetButtonStates();
-                            this.setState({
-                                deleteModel: true,
-                                idToModify: row.original.ID,
-                                rowData: row.original
-                            })
-                        }}>Delete
+                            type="submit" onClick={() => {
+                        this.resetButtonStates();
+                        this.setState({
+                            showDelete: true,
+                            rowData: row.original
+
+                        })
+                    }}>Delete
                     </button>
                 </div>
             ),
@@ -102,20 +100,19 @@ class BusinessRole extends Component {
         }];
 
 
-
-
         if (error) {
             return (
                 <div className="container-fluid">
                     <Alert variant="danger">
-                        There was a error with loading content from the database
+                        There was a error with loading content from the database.
+                        {error.message && (<pre>{error.message}</pre>)}
                     </Alert>
                 </div>
             );
         } else {
             return (
                 <div className='container-fluid'>
-                    <ToastsContainer store={ToastsStore} position={ToastsContainerPosition.TOP_RIGHT} />
+                    <ToastsContainer store={ToastsStore} position={ToastsContainerPosition.TOP_RIGHT}/>
 
                     <ReactTable
                         data={data}
@@ -125,54 +122,64 @@ class BusinessRole extends Component {
                         multiSort={true}
                         sortable={true}
                     />
-
-                    <Formik
-                        onSubmit={(values, { setSubmitting }) => {
-                            fetch('api/businessrole/add', {
-                                method: 'POST',
-                                headers: {
-                                    'Accept': 'application/json',
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(values, null, 2)
-                            }).then((response) => response.json())
-                                .then((data) => {
-                                    if (data.success) {
-                                        this.setState({ show: false });
-                                        ToastsStore.success("You have just added a new business role")
-                                        this.refreshGrid();
-                                    }
-                                }).finally(() => {
-                                    setSubmitting(false);
-                                });
-                        }}
-                        validationSchema={RoleValidation}
-                    >
-                        {({ handleSubmit, errors, handleBlur, handleChange }) => (
-                            <Modal show={show} onHide={() => {
-                                this.setState({ show: false })
-                            }}>
-                                <Modal.Header closeButton>
-                                    <Modal.Title>Modal Heading</Modal.Title>
-                                </Modal.Header>
-
+                    <Modal show={showForm} onHide={() => {
+                        this.setState({showForm: false})
+                    }}>
+                        <Formik
+                            initialValues={rowData}
+                            onSubmit={(values, {setSubmitting}) => {
+                                fetch('api/businessrole/save', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify(values, null, 2)
+                                })
+                                    .then((response) => response.json())
+                                    .then((data) => {
+                                        if (data.success) {
+                                            this.setState({
+                                                showForm: false,
+                                                rowData: {},
+                                            });
+                                            ToastsStore.success(data.message);
+                                            this.refreshGrid();
+                                        } else {
+                                            ToastsStore.error(data.message)
+                                        }
+                                    })
+                                    .finally(() => {
+                                        setSubmitting(false);
+                                    });
+                            }}
+                            validationSchema={RoleValidation}
+                        >
+                            {({handleSubmit, errors, handleBlur, handleChange, values, touched}) => (
                                 <Form onSubmit={handleSubmit}>
+                                    <Modal.Header closeButton>
+                                        <Modal.Title>Modal Heading</Modal.Title>
+                                    </Modal.Header>
+
                                     <Modal.Body>
-                                        <label>Business Role</label>
-                                        <input
-                                            className="form-control"
-                                            name="name"
+                                        <Form.Label>Business Role</Form.Label>
+                                        <Form.Control
+                                            name="Name"
                                             type="text"
+                                            placeholder="Enter role name"
                                             onChange={handleChange}
                                             onBlur={handleBlur}
+                                            value={values.Name || ""}
+                                            isValid={touched.Name && !errors.Name}
+                                            isInvalid={!!errors.Name}
                                         />
-                                        {errors.name ? (<div className="form-errors">{errors.name}</div>) : null}
+                                        <Form.Control.Feedback type="invalid">{errors.Name}</Form.Control.Feedback>
                                     </Modal.Body>
 
                                     <Modal.Footer>
                                         <Button variant="secondary" onClick={() => {
                                             this.setState({
-                                                show: false,
+                                                showForm: false,
                                             })
                                         }}> Close
                                         </Button>
@@ -180,78 +187,25 @@ class BusinessRole extends Component {
                                         </Button>
                                     </Modal.Footer>
                                 </Form>
-                            </Modal>
-                        )}
-                    </Formik>
-
-
-
-
-                    <Formik
-                        initialValues={{ name: `${rowData.Name}` }}
-                        onSubmit={(values, { setSubmitting }) => {
-                            fetch(`api/businessrole/edit/${idToModify}`, {
-                                method: 'POST',
-                                headers: {
-                                    'Accept': 'application/json',
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(values, null, 2)
-                            }).finally(() => {
-                                this.setState({ editModal: false });
-                                ToastsStore.success("You have just edited the business role")
-                                this.refreshGrid();
-                                setSubmitting(false);
-                            });
-                        }}
-                    >
-                        {({ handleSubmit, errors, handleBlur, handleChange, values }) => (
-                            <Modal show={editModal} onHide={() => {
-                                this.setState({ editModal: false })
-                            }}>
-                                <Modal.Header closeButton>
-                                    <Modal.Title>Modal Heading</Modal.Title>
-                                </Modal.Header>
-
-                                <Form onSubmit={handleSubmit}>
-                                    <Modal.Body>
-                                        {console.log(values)}
-                                        <label>Business Role</label>
-                                        <input
-                                            className="form-control"
-                                            name="name"
-                                            type="text"
-                                            onChange={handleChange}
-                                            onBlur={handleBlur}
-                                            value={values.name}
-                                        />
-                                        {console.log(rowData.Name)}
-
-                                        {errors.name ? (<div className="form-errors">{errors.name}</div>) : null}
-                                    </Modal.Body>
-
-                                    <Modal.Footer>
-                                        <Button variant="secondary" onClick={() => {
-                                            this.setState({
-                                                editModal: false,
-                                            })
-                                        }}> Close
-                                        </Button>
-                                        <Button variant="primary" type="submit"> Save Changes
-                                        </Button>
-                                    </Modal.Footer>
-                                </Form>
-                            </Modal>
-                        )}
-                    </Formik>
+                            )
+                            }
+                        </Formik>
+                    </Modal>
 
 
                     <ConfirmationModal
-                        show={deleteModel}
-                        id={idToModify}
+                        show={showDelete}
+                        id={rowData.ID}
                         data={rowData}
                         route="api/businessrole"
                         action="delete"
+                        onSuccess={() => {
+                            this.setState({
+                                showDelete: false,
+                                rowData: {}
+                            });
+                            this.refreshGrid();
+                        }}
                     />
                 </div>
             )
